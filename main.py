@@ -5,15 +5,36 @@ import os
 import re
 import datetime
 
+import pywintypes, win32file, win32con
 
-# 파일의 생성일자와 수정일자를 변경하는 함수
+
+# 파일의 수정일자를 변경하는 함수
 def change_file_dates(filepath, date_str):
     try:
         file_date = datetime.datetime.strptime(date_str, '%Y%m%d%H%M%S')
         os.utime(filepath, (file_date.timestamp(), file_date.timestamp()))
-        print(f"파일 '{filepath}'의 생성일자와 수정일자가 변경되었습니다.")
+        print(f"파일 '{filepath}'의 수정일자가 변경되었습니다.")
     except ValueError:
         print(f"파일 '{filepath}'에서 유효한 날짜를 추출할 수 없습니다.")
+
+
+# 파일의 생성일자를 변경하는 함수
+def change_file_creation_time(fname, newtime):
+    try:
+        newtime = datetime.datetime.strptime(newtime, '%Y%m%d%H%M%S')
+        wintime = pywintypes.Time(newtime)
+        winfile = win32file.CreateFile(
+            fname, win32con.GENERIC_WRITE,
+            win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE | win32con.FILE_SHARE_DELETE,
+            None, win32con.OPEN_EXISTING,
+            win32con.FILE_ATTRIBUTE_NORMAL, None)
+
+        win32file.SetFileTime(winfile, wintime, None, None)
+
+        winfile.close()
+        print(f"파일 '{fname}'의 생성일자가 변경되었습니다.")
+    except ValueError:
+        print(f"파일 '{fname}'에서 유효한 날짜를 추출할 수 없습니다.")
 
 
 # 작업 디렉토리 설정
@@ -39,3 +60,4 @@ for root, _, files in os.walk(directory):
 
         # 파일의 생성일자와 수정일자 변경
         change_file_dates(filepath, date_str)
+        change_file_creation_time(filepath, date_str)
